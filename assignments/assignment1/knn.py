@@ -74,7 +74,7 @@ class KNN:
         dists = np.zeros((num_test, num_train), np.float32)
         for i_test in range(num_test):
             dists[i_test] = np.sum(np.abs(X[i_test] - self.train_X), axis =1)
-        #print('shape', dists.shape)
+       
         return dists
 
     def compute_distances_no_loops(self, X):

@@ -15,7 +15,18 @@ def softmax(predictions):
     '''
     # TODO implement softmax
     # Your final implementation shouldn't have any loops
-    raise Exception("Not implemented!")
+    
+    
+    if predictions.ndim == 1:
+        norm_pred = predictions - np.max(predictions)
+        exp_sum = np.sum(np.exp(norm_pred))
+    else:
+        norm_pred = predictions - np.max(predictions, axis=1)[:, np.newaxis]
+        exp_sum = np.sum(np.exp(norm_pred), axis=1)[:, np.newaxis]
+    probs = np.exp(norm_pred) / exp_sum
+    
+    return probs
+    #raise Exception("Not implemented!")
 
 
 def cross_entropy_loss(probs, target_index):
@@ -33,7 +44,15 @@ def cross_entropy_loss(probs, target_index):
     '''
     # TODO implement cross-entropy
     # Your final implementation shouldn't have any loops
-    raise Exception("Not implemented!")
+    
+    if probs.ndim == 1:
+        loss = -np.log(probs[target_index])
+    else:
+        target_index = target_index.flatten()
+        str_index_arr = np.arange(target_index.shape[0])
+        loss = -np.mean(np.log(probs[(str_index_arr, target_index)]))
+    return loss
+    #raise Exception("Not implemented!")
 
 
 def softmax_with_cross_entropy(predictions, target_index):
@@ -53,7 +72,20 @@ def softmax_with_cross_entropy(predictions, target_index):
     '''
     # TODO implement softmax with cross-entropy
     # Your final implementation shouldn't have any loops
-    raise Exception("Not implemented!")
+    probs = softmax(predictions)
+    loss = cross_entropy_loss(probs, target_index)
+
+    if probs.ndim == 1:
+        subtr = np.zeros_like(probs)
+        subtr[target_index] = 1
+        dprediction = probs - subtr
+    else:
+        batch_size = predictions.shape[0]
+        str_index_arr = np.arange(target_index.shape[0])
+        subtr = np.zeros_like(probs)
+        subtr[(str_index_arr, target_index.flatten())] = 1
+        dprediction = (probs - subtr) / batch_size
+    #raise Exception("Not implemented!")
 
     return loss, dprediction
 
@@ -73,9 +105,13 @@ def l2_regularization(W, reg_strength):
 
     # TODO: implement l2 regularization and gradient
     # Your final implementation shouldn't have any loops
-    raise Exception("Not implemented!")
+    #raise Exception("Not implemented!")
+    loss = reg_strength * (W ** 2).sum()
+    grad = 2 * reg_strength * W
 
     return loss, grad
+    
+
     
 
 def linear_softmax(X, W, target_index):
@@ -96,10 +132,10 @@ def linear_softmax(X, W, target_index):
 
     # TODO implement prediction and gradient over W
     # Your final implementation shouldn't have any loops
-    raise Exception("Not implemented!")
+    loss, dpred = softmax_with_cross_entropy(predictions, target_index)
+    dW = np.dot(X.T, dpred)
     
     return loss, dW
-
 
 class LinearSoftmaxClassifier():
     def __init__(self):
@@ -121,7 +157,7 @@ class LinearSoftmaxClassifier():
 
         num_train = X.shape[0]
         num_features = X.shape[1]
-        num_classes = np.max(y)+1
+        num_classes = np.max(y) + 1
         if self.W is None:
             self.W = 0.001 * np.random.randn(num_features, num_classes)
 
@@ -137,10 +173,17 @@ class LinearSoftmaxClassifier():
             # Apply gradient to weights using learning rate
             # Don't forget to add both cross-entropy loss
             # and regularization!
-            raise Exception("Not implemented!")
+            #raise Exception("Not implemented!")
+            
+            for batch_indices in batches_indices:
+                loss_pred, grad_pred = linear_softmax(X[batch_indices], self.W, y[batch_indices])
+                loss_reg, grad_reg = l2_regularization(self.W, reg)
+                loss, grad = loss_pred + loss_reg, grad_pred + grad_reg
 
+                self.W -= grad * learning_rate 
+                loss_history.append(loss)
             # end
-            print("Epoch %i, loss: %f" % (epoch, loss))
+            #print("Epoch %i, loss: %f" % (epoch, loss))
 
         return loss_history
 
@@ -158,8 +201,11 @@ class LinearSoftmaxClassifier():
 
         # TODO Implement class prediction
         # Your final implementation shouldn't have any loops
-        raise Exception("Not implemented!")
-
+        #raise Exception("Not implemented!")
+        
+        probs = softmax(np.dot(X, self.W))
+        y_pred = np.argmax(probs, axis=-1)
+        
         return y_pred
 
 
